@@ -79,6 +79,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+INTERNAL_IPS = [
+    "127.0.0.1"
+]
+
+
 ROOT_URLCONF = 'medipt.urls'
 
 TEMPLATES = [
