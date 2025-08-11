@@ -30,4 +30,4 @@ repos:
     hooks:
       - id: bandit
         exclude: ^(manage\.py|.*/migrations/.*|.*/tests/.*)$
-        args: ['-ll'] 
+        args: ['-ll']

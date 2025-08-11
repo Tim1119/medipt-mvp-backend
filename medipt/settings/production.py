@@ -1,4 +1,5 @@
 from .base import *  # noqa: F403, F401
+
 # Email Configuration (base - override in environment files)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
