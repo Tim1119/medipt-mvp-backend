@@ -1,0 +1,57 @@
+[tool.black]
+line-length = 88
+target-version = ['py311']  # Fixed target version
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_django = "django"
+known_first_party = "medipt_mvp_backend,apps"
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.coverage.run]
+source = "."
+omit = [
+    "*/migrations/*",
+    "*/venv/*",
+    "*/env/*",
+    "manage.py",
+    "*/settings/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "medipt_mvp_backend.settings.development"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--cov --cov-report=html --cov-report=term-missing"
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", "env", ".venv", "migrations"]
+skips = ["B101", "B601"]  # Skip assert_used and shell_injection_subprocess for Django
