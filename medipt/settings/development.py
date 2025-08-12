@@ -183,16 +183,18 @@ LOGGING = {
             "format": "{levelname} {message}",
             "style": "{",
         },
-        "colored": {
-            "()": "colorlog.ColoredFormatter",
-            "format": "{log_color}{levelname} {asctime} {module} {message}",
-            "style": "{",
-        }
-        if "colorlog" in locals()
-        else {
-            "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
-        },
+        "colored": (
+            {
+                "()": "colorlog.ColoredFormatter",
+                "format": "{log_color}{levelname} {asctime} {module} {message}",
+                "style": "{",
+            }
+            if "colorlog" in locals()
+            else {
+                "format": "{levelname} {asctime} {module} {message}",
+                "style": "{",
+            }
+        ),
     },
     "handlers": {
         "console": {
