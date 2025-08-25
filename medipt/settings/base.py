@@ -48,12 +48,19 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_extensions",
     "django_filters",
+    'django_otp',
+    'django_otp.plugins.otp_totp',     # TOTP tokens (Google Authenticator)
+    'django_otp.plugins.otp_static',   # backup/static codes
+    'two_factor',
+    'django.contrib.humanize',    
+    'axes',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    'django_otp.middleware.OTPMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -62,6 +69,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'axes.middleware.AxesMiddleware',
 ]
 
 INTERNAL_IPS = ["127.0.0.1"]
@@ -272,3 +280,9 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 
 
 # AUTH_USER_MODEL = 'accounts.User'
+
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
