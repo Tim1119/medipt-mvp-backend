@@ -20,3 +20,5 @@ class CustomUserManager(BaseUserManager):
         
         self.model(email=self.normalize_email(),)
         
+
+
