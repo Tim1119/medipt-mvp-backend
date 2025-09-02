@@ -18,3 +18,7 @@ def validate_uuid(id, version=None):
         return True
     except (ValueError, AttributeError, TypeError):
         return False
+
+def validate_organization_acronym(value):
+    if len(value) < 2 or len(value) > 15:
+        raise ValidationError("Organization acronym must be between 2 and 15 characters.")
