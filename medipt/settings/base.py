@@ -179,7 +179,9 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
+        'shared.custom_renderer.SuccessJsonRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        'rest_framework.renderers.JSONRenderer',
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -188,6 +190,9 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {"anon": "100/hour", "user": "1000/hour"},
     "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
 }
+
+
+DRF_STANDARDIZED_ERRORS = {"EXCEPTION_FORMATTER_CLASS": "shared.custom_exception_handler.MyExceptionFormatter"}
 
 
 # JWT Configuration
