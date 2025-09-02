@@ -19,7 +19,7 @@ ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(" ")
 
 # Application definition
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,6 +28,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+LOCAL_APPS = [
+    'apps.accounts',
+]
 
 THIRD_PARTY_APPS = [
     "cloudinary_storage",
@@ -45,6 +48,8 @@ THIRD_PARTY_APPS = [
     "django_filters",
 ]
 
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS 
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -270,3 +275,5 @@ X_FRAME_OPTIONS = "DENY"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
+AUTH_USER_MODEL = 'accounts.User'
