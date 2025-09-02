@@ -46,13 +46,19 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_extensions",
     "django_filters",
+     "debug_toolbar",
 ]
 
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS 
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
