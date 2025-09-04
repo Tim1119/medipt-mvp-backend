@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from medipt.apps.accounts.email_service import OrganizationEmailService
+from .organization_email_service import OrganizationEmailService
 from .models import User
 from apps.organizations.models import Organization
 from django.core.mail import EmailMessage
@@ -18,7 +18,7 @@ import jwt
 def send_organization_activation_email(current_site, organization_email):
     try:
         organization = Organization.objects.get(user__email=organization_email)
-        OrganizationEmailService.send_activation_email(organization, current_site)
+        OrganizationEmailService.send_organization_activation_email(organization, current_site)
     except Organization.DoesNotExist:
         raise OrganizationNotFoundException()
 

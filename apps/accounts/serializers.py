@@ -10,7 +10,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import AuthenticationFailed
 
-logger = logging.getLogger(__name__)
+
 
 from rest_framework import serializers
 from apps.organizations.models import Organization, User
@@ -21,12 +21,12 @@ class OrganizationSignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     acronym = serializers.CharField(max_length=10, min_length=2, validators=[validate_organization_acronym])
-
+    role = serializers.ChoiceField(choices=UserRoles.choices, default=UserRoles.ORGANIZATION)
     user_email = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'acronym', 'email', 'password', 'user_email']
+        fields = ['id', 'name', 'acronym', 'email' ,'role','user_email','password']
         read_only_fields = ['id', 'user_email']
 
     def get_user_email(self, obj):
