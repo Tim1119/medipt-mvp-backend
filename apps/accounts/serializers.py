@@ -1,0 +1,51 @@
+from django.db import transaction, IntegrityError
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
+from shared.validators import validate_organization_acronym
+from rest_framework import serializers
+from .user_roles import UserRoles
+from apps.organizations.models import Organization, User  
+import logging
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
+
+logger = logging.getLogger(__name__)
+
+from rest_framework import serializers
+from apps.organizations.models import Organization, User
+from shared.validators import validate_organization_acronym
+from apps.organizations.organization_service import OrganizationService
+
+class OrganizationSignupSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    acronym = serializers.CharField(max_length=10, min_length=2, validators=[validate_organization_acronym])
+
+    user_email = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Organization
+        fields = ['id', 'name', 'acronym', 'email', 'password', 'user_email']
+        read_only_fields = ['id', 'user_email']
+
+    def get_user_email(self, obj):
+        return obj.user.email
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+       
+    def validate_acronym(self, value):
+        if Organization.objects.filter(acronym=value).exists():
+            raise serializers.ValidationError("An organization with this acronym already exists.")
+        return value
+       
+    def create(self, validated_data):
+        return OrganizationService.create_organization(
+            name=validated_data['name'],
+            acronym=validated_data['acronym'],
+            email=validated_data['email'],
+            password=validated_data['password']
+        )

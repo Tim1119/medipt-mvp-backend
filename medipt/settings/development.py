@@ -15,7 +15,7 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 EMAIL_USE_TLS = True
 
 
-FRONTEND = ""
+
 
 DATABASES = {
     'default': {
@@ -27,3 +27,5 @@ DATABASES = {
         'PORT': env('DEV_DB_PORT'),
     }
 }
+
+REACT_FRONTEND_URL = env("DEV_REACT_FRONTEND_URL")

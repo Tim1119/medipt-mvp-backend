@@ -13,3 +13,6 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@medipt.com")
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default="").split()
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False  # Set to True only in development
+
+
+REACT_FRONTEND_URL =""
