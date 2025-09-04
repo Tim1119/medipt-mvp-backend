@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from django.forms import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .serializers import OrganizationSignupSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
@@ -9,8 +10,10 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .exceptions import OrganizationSignupException, OrganizationVerificationEmailFailedException
+from .exceptions import InvalidActivationTokenException, OrganizationSignupException, OrganizationVerificationEmailFailedException, UserDoesNotExistException
 import logging
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 logger = logging.getLogger(__name__)
 
@@ -41,3 +44,25 @@ class OrganizationSignupView(generics.GenericAPIView):
             raise OrganizationSignupException(detail=e.messages)
         except Exception as e:
             raise OrganizationSignupException(detail=f"Unexpected error: {str(e)}")
+
+
+class VerifyAccount(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+
+            if user.is_active:
+                return Response({"success": True, "message": "Account already active."})
+
+            if default_token_generator.check_token(user, token):
+                user.is_active = True
+                user.is_verified = True
+                user.save()
+                return Response({"success": True, "message": "Account successfully activated."})
+            else:
+                raise InvalidActivationTokenException()
+        
+        except User.DoesNotExist:
+            raise UserDoesNotExistException()
+        
