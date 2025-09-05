@@ -1,4 +1,3 @@
-# management/commands/seed_db.py
 from django.core.management.base import BaseCommand
 from faker import Faker
 import random
@@ -6,11 +5,34 @@ from apps.accounts.models import User
 from apps.organizations.models import Organization
 from apps.caregivers.models import Caregiver, role_abbreviation
 from apps.patients.models import Patient, PatientMedicalRecord, PatientDiagnosisDetails, VitalSign
-from medipt.apps.accounts.user_roles import UserRoles
+from shared.text_choices import UserRoles
 from shared.text_choices import Gender, MaritalStatus, BloodGroupChoices, GenotypeChoices
 from datetime import date
 
 fake = Faker()
+
+staff_counters = {}  
+
+def get_next_staff_number(org, caregiver_type):
+    key = (org.id, caregiver_type)
+    last_count = staff_counters.get(key, 0)
+    next_count = last_count + 1
+    staff_counters[key] = next_count
+
+    acronym = org.acronym.upper()
+    role_abbr = role_abbreviation.get(caregiver_type, "UNK")
+    return f"{acronym}_{role_abbr}_{next_count}"
+
+def generate_nigerian_phone_number():
+    # Choose whether to use +234 or 0
+    prefix = random.choice(["+234"])
+    # Generate 10 digits after the prefix (Nigerian format)
+    first_digit = random.choice(["7", "8", "9"])
+    remaining_digits = "".join([str(random.randint(0, 9)) for _ in range(9)])
+    return f"{prefix}{first_digit}{remaining_digits}"
+
+
+from django.db import transaction
 
 class Command(BaseCommand):
     help = "Seed the database with test data"
@@ -25,111 +47,118 @@ class Command(BaseCommand):
         caregivers_per_org = options['caregivers']
         patients_per_org = options['patients']
 
-        organizations = []
-        all_caregivers = []
+        try:
+            with transaction.atomic():  # wrap the entire seeding process
+                organizations = []
+                all_caregivers = []
 
-        # Create organizations
-        for _ in range(org_count):
-            user = User.objects.create_user(
-                email=fake.unique.email(),
-                password="password2000",
-                role=UserRoles.ORGANIZATION,
-                is_active=True,
-                is_verified=True
-            )
-            org = Organization.objects.create(
-                user=user,
-                name=fake.company(),
-                acronym=fake.unique.lexify(text='???').upper(),
-                address=fake.address(),
-                phone_number=fake.phone_number(),
-            )
-            organizations.append(org)
+                # Create organizations
+                for _ in range(org_count):
+                    user = User.objects.create_user(
+                        email=fake.unique.email(),
+                        password="password2000",
+                        role=UserRoles.ORGANIZATION,
+                        is_active=True,
+                        is_verified=True
+                    )
+                    org = Organization.objects.create(
+                        user=user,
+                        name=fake.company(),
+                        acronym=fake.unique.lexify(text='???').upper(),
+                        address=fake.address(),
+                        phone_number=generate_nigerian_phone_number(),
+                    )
+                    organizations.append(org)
 
-        # Create caregivers
-        for org in organizations:
-            org_caregivers = []
-            for _ in range(caregivers_per_org):
-                user = User.objects.create_user(
-                    email=fake.unique.email(),
-                    password="password2000",
-                    role=UserRoles.CAREGIVER,
-                    is_active=True,
-                    is_verified=True
-                )
-                caregiver_type = random.choice(list(role_abbreviation.keys()))
-                caregiver = Caregiver.objects.create(
-                    user=user,
-                    organization=org,
-                    first_name=fake.first_name(),
-                    last_name=fake.last_name(),
-                    caregiver_type=caregiver_type,
-                    gender=random.choice([Gender.MALE, Gender.FEMALE]),
-                    date_of_birth=fake.date_of_birth(minimum_age=25, maximum_age=60),
-                    marital_status=random.choice(list(MaritalStatus.choices)),
-                    phone_number=fake.phone_number(),
-                )
-                org_caregivers.append(caregiver)
-                all_caregivers.append(caregiver)
+                # Create caregivers
+                for org in organizations:
+                    org_caregivers = []
+                    for _ in range(caregivers_per_org):
+                        user = User.objects.create_user(
+                            email=fake.unique.email(),
+                            password="password2000",
+                            role=UserRoles.CAREGIVER,
+                            is_active=True,
+                            is_verified=True
+                        )
+                        caregiver_type = random.choice(list(role_abbreviation.keys()))
+                        staff_number = get_next_staff_number(org, caregiver_type)
+                        caregiver = Caregiver.objects.create(
+                            user=user,
+                            organization=org,
+                            first_name=fake.first_name(),
+                            last_name=fake.last_name(),
+                            caregiver_type=caregiver_type,
+                            gender=random.choice([Gender.MALE, Gender.FEMALE]),
+                            date_of_birth=fake.date_of_birth(minimum_age=25, maximum_age=60),
+                            marital_status=random.choice(list(MaritalStatus.choices)),
+                            phone_number=generate_nigerian_phone_number(),
+                            staff_number=staff_number
+                        )
+                        org_caregivers.append(caregiver)
+                        all_caregivers.append(caregiver)
 
-            org.caregivers = org_caregivers  # optional for reference
+                    org.caregivers = org_caregivers
 
-        # Create patients
-        for org in organizations:
-            for _ in range(patients_per_org):
-                user = User.objects.create_user(
-                    email=fake.unique.email(),
-                    password="password2000",
-                    role=UserRoles.PATIENT,
-                    is_active=True,
-                    is_verified=True
-                )
-                patient = Patient.objects.create(
-                    user=user,
-                    organization=org,
-                    first_name=fake.first_name(),
-                    last_name=fake.last_name(),
-                    gender=random.choice([Gender.MALE, Gender.FEMALE]),
-                    date_of_birth=fake.date_of_birth(minimum_age=0, maximum_age=90),
-                    marital_status=random.choice(list(MaritalStatus.choices)),
-                    phone_number=fake.phone_number(),
-                    emergency_phone_number=fake.phone_number(),
-                )
+                # Create patients and related records
+                for org in organizations:
+                    for _ in range(patients_per_org):
+                        user = User.objects.create_user(
+                            email=fake.unique.email(),
+                            password="password2000",
+                            role=UserRoles.PATIENT,
+                            is_active=True,
+                            is_verified=True
+                        )
+                        patient = Patient.objects.create(
+                            user=user,
+                            organization=org,
+                            first_name=fake.first_name(),
+                            last_name=fake.last_name(),
+                            gender=random.choice([Gender.MALE, Gender.FEMALE]),
+                            date_of_birth=fake.date_of_birth(minimum_age=0, maximum_age=90),
+                            marital_status=random.choice(list(MaritalStatus.choices)),
+                            phone_number=generate_nigerian_phone_number(),
+                            emergency_phone_number=generate_nigerian_phone_number(),
+                        )
 
-                # Medical record
-                PatientMedicalRecord.objects.create(
-                    patient=patient,
-                    blood_group=random.choice(list(BloodGroupChoices.choices)),
-                    genotype=random.choice(list(GenotypeChoices.choices)),
-                    weight=random.randint(40, 120),
-                    height=random.randint(140, 200),
-                )
+                        # Medical record
+                        PatientMedicalRecord.objects.create(
+                            patient=patient,
+                            blood_group=random.choice(list(BloodGroupChoices)).value,
+                            genotype=random.choice(list(GenotypeChoices)).value,
+                            weight=random.randint(40, 120),
+                            height=random.randint(140, 200),
+                        )
 
-                # Diagnosis (assign caregiver from same org)
-                diag = PatientDiagnosisDetails.objects.create(
-                    patient=patient,
-                    organization=org,
-                    caregiver=random.choice([c for c in all_caregivers if c.organization == org]),
-                    assessment=fake.sentence(),
-                    diagnoses=fake.word(),
-                    medication=fake.word(),
-                    health_care_center=fake.company(),
-                    notes=fake.text(),
-                )
+                        # Diagnosis
+                        diag = PatientDiagnosisDetails.objects.create(
+                            patient=patient,
+                            organization=org,
+                            caregiver=random.choice([c for c in all_caregivers if c.organization == org]),
+                            assessment=fake.sentence(),
+                            diagnoses=fake.word(),
+                            medication=fake.word(),
+                            health_care_center=fake.company(),
+                            notes=fake.text(),
+                        )
 
-                # Vital signs
-                VitalSign.objects.create(
-                    patient_diagnoses_details=diag,
-                    body_temperature=round(random.uniform(36.0, 39.0), 1),
-                    pulse_rate=random.randint(60, 120),
-                    blood_pressure=f"{random.randint(100, 140)}/{random.randint(60, 90)}",
-                    blood_oxygen=round(random.uniform(90.0, 100.0), 1),
-                    respiration_rate=random.randint(12, 24),
-                    weight=random.randint(40, 120),
-                )
+                        # Vital signs
+                        VitalSign.objects.create(
+                            patient_diagnoses_details=diag,
+                            body_temperature=round(random.uniform(36.0, 39.0), 1),
+                            pulse_rate=random.randint(60, 120),
+                            blood_pressure=f"{random.randint(100, 140)}/{random.randint(60, 90)}",
+                            blood_oxygen=round(random.uniform(90.0, 100.0), 1),
+                            respiration_rate=random.randint(12, 24),
+                            weight=random.randint(40, 120),
+                        )
 
-        self.stdout.write(self.style.SUCCESS(
-            f'Successfully seeded {org_count} organizations, '
-            f'{len(all_caregivers)} caregivers, and '
-            f'{patients_per_org * org_count} patients.'
-        ))
+            self.stdout.write(self.style.SUCCESS(
+                f'Successfully seeded {org_count} organizations, '
+                f'{len(all_caregivers)} caregivers, and '
+                f'{patients_per_org * org_count} patients.'
+            ))
+
+        except Exception as e:
+            self.stderr.write(self.style.ERROR(f"Seeding failed: {e}"))

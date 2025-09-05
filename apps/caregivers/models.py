@@ -1,10 +1,7 @@
 from django.db import models
 from django.forms import ValidationError
 from shared.models import TimeStampedUUID
-from django.core.validators import FileExtensionValidator
 from autoslug import AutoSlugField
-from imagekit.models import ProcessedImageField
-from imagekit.processors import ResizeToFill
 from django.utils.translation import gettext_lazy as _ 
 from shared.validators import validate_phone_number
 from shared.text_choices import Gender,MaritalStatus,CaregiverTypes
@@ -56,3 +53,7 @@ class Caregiver(TimeStampedUUID):
     def clean(self):
         if self.date_of_birth and self.date_of_birth > date.today():
             raise ValidationError(_("Date of birth cannot be in the future."))
+        
+    @property
+    def full_name(self) -> str:
+        return f"{self.last_name} {self.first_name}"

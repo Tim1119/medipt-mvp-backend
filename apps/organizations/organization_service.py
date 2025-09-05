@@ -1,7 +1,7 @@
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
 from apps.organizations.models import Organization, User
-from apps.accounts.user_roles import UserRoles
+from shared.text_choices import UserRoles
 import logging
 
 logger = logging.getLogger(__name__)

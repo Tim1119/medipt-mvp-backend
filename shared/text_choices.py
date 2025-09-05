@@ -43,8 +43,6 @@ class Gender(models.TextChoices):
     MALE = "Male",_("Male")
     FEMALE = "Female",_("Female")
 
-
-
 class BloodGroupChoices(models.TextChoices):
     A_POSITIVE = "A+", _("A+")
     A_NEGATIVE = "A-", _("A-")
@@ -55,10 +53,15 @@ class BloodGroupChoices(models.TextChoices):
     O_POSITIVE = "O+", _("O+")
     O_NEGATIVE = "O-", _("O-")
 
-
 class GenotypeChoices(models.TextChoices):
     AA = "AA", _("AA")
     AS = "AS", _("AS")
     SS = "SS", _("SS")
     AC = "AC", _("AC")
     SC = "SC", _("SC") 
+
+class UserRoles(models.TextChoices):
+    PATIENT = 'Patient', _('Patient')
+    CAREGIVER = 'Caregiver', _('Caregiver')
+    ORGANIZATION = 'Organization', _('Organization')
+    ORGANIZATION_ADMIN = 'Organization_Admin', _('Organization_Admin')

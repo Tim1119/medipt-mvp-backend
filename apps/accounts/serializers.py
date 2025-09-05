@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from shared.validators import validate_organization_acronym
 from rest_framework import serializers
-from .user_roles import UserRoles
+from shared.text_choices import UserRoles
 from apps.organizations.models import Organization, User  
 import logging
 from django.contrib.auth import authenticate

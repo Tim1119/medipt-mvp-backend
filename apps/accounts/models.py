@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin,Group, Permission
 from django.utils.translation import gettext_lazy as _ 
 from .managers import CustomUserManager
-from .user_roles import UserRoles
+from shared.text_choices import UserRoles
 from django.utils import timezone
 from shared.models import SoftDeleteModel
 
