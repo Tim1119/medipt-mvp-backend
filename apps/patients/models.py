@@ -11,12 +11,11 @@ from autoslug import AutoSlugField
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 from django.utils.translation import gettext_lazy as _ 
-from shared.validators import validate_phone_number
+from shared.validators import validate_phone_number,validate_blood_pressure
 from shared.text_choices import BloodGroupChoices, Gender, GenotypeChoices,MaritalStatus
 import uuid
 from apps.organizations.models import Organization
 from apps.caregivers.models import Caregiver
-from .validators import validate_blood_pressure
 from cloudinary.models import CloudinaryField
 
 
