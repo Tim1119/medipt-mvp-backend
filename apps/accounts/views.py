@@ -261,7 +261,7 @@ class ChangePasswordView(generics.GenericAPIView):
 
         if serializer.validated_data["new_password"] != serializer.validated_data["confirm_password"]:
             raise ValidationError("Passwords do not match.")
-        # Save new password
+
         user.set_password(serializer.validated_data["new_password"])
         user.save()
 
