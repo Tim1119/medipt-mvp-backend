@@ -31,6 +31,9 @@ DJANGO_APPS = [
 LOCAL_APPS = [
     'apps.accounts',
     'apps.organizations',
+    'apps.patients',
+    'apps.caregivers',
+
 ]
 
 THIRD_PARTY_APPS = [

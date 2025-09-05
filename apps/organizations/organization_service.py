@@ -10,6 +10,14 @@ logger = logging.getLogger(__name__)
 class OrganizationService:
 
     @staticmethod
+    def organization_logo_url(caregiver):
+        try:
+            url = caregiver.logo.url
+        except:
+            url ='' 
+        return url
+
+    @staticmethod
     def create_organization(name, acronym, email, password):
         try:
             with transaction.atomic():

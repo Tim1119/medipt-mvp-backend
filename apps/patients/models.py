@@ -98,7 +98,7 @@ class PatientMedicalRecord(TimeStampedUUID,SoftDeleteModel):
 class PatientDiagnosisDetails(TimeStampedUUID,SoftDeleteModel):
     patient = models.ForeignKey(Patient,on_delete=models.PROTECT,verbose_name=_("Patient"),db_index=True)
     organization = models.ForeignKey(Organization,on_delete=models.PROTECT,verbose_name=_("Organization"),db_index=True)
-    caregiver= models.ForeignKey(Caregiver,on_delete=models.SET_NULL,verbose_name=_("Caregiver"),db_index=True)
+    caregiver= models.ForeignKey(Caregiver,on_delete=models.SET_NULL,verbose_name=_("Caregiver"),db_index=True,null=True)
     assessment = models.CharField(max_length=255,verbose_name=_("Assesssment"))
     diagnoses = models.CharField(max_length=255,verbose_name=_("Patient's Diagnoses"))
     medication = models.CharField(max_length=255,verbose_name=_("Medication"))

@@ -32,17 +32,7 @@ class Organization(TimeStampedUUID,SoftDeleteModel):
         verbose_name = _("Organization")
         verbose_name_plural = _("Organizations")
         ordering = ["-created_at"]
-
-    
-    @property
-    def organization_logo_url(self):
-        try:
-            url = self.logo.url
-        except:
-            url ='' 
-        return url
-    
-
+        
     def __str__(self):
         return f"Organization account for {self.name}"
     

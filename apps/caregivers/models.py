@@ -1,10 +1,4 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.forms import ValidationError
 from shared.models import TimeStampedUUID
 from django.core.validators import FileExtensionValidator
@@ -25,7 +19,7 @@ class Caregiver(TimeStampedUUID):
 
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization,on_delete=models.PROTECT,verbose_name=_("Organization"))
-    first_name = models.CharField(max_length=255,verbose_name=_("Caregiver First Name")),db_index=True
+    first_name = models.CharField(max_length=255,verbose_name=_("Caregiver First Name"),db_index=True)
     last_name = models.CharField(max_length=255,verbose_name=_("Caregiver Last Name"),db_index=True)
     caregiver_type = models.CharField(max_length=30,choices=CaregiverTypes.choices,db_index=True)
     date_of_birth = models.DateField(blank=True,null=True)
@@ -43,54 +37,21 @@ class Caregiver(TimeStampedUUID):
     slug = AutoSlugField(populate_from='user', unique=True)
     staff_number = models.CharField(max_length=30, unique=True,blank=True,null=True)
     
-
-
     class Meta:
         verbose_name = _("Caregiver")
         verbose_name_plural = _("Caregivers")
         ordering = ["-created_at"]
 
-    @property
-    def profile_picture_url(self):
-        try:
-            url = self.profile_picture.url
-        except:
-            url ='' 
-        return url
-
     def __str__(self):
         return f"Caregiver account for {self.first_name.title()} {self.last_name.title()} for {self.organization.name.title()} Organization"
 
     def save(self, *args, **kwargs):
+        from .caregiver_service import CaregiverService
         if not self.staff_number:
-            self.staff_number = self.generate_unique_staff_number()
+            self.staff_number = CaregiverService.generate_unique_staff_number(
+                self.organization, self.caregiver_type
+            )
         super(Caregiver, self).save(*args, **kwargs)
-
-
-    def generate_unique_staff_number(self):
-        acronym = self.organization.acronym.upper() 
-        role_abbr = role_abbreviation.get(self.caregiver_type, "UNK")  # Use UNK if role is not found
-        caregiver_count = Caregiver.objects.filter(organization=self.organization, caregiver_type=self.caregiver_type).count() + 1
-
-        while True:
-            # Generate the staff number
-            staff_number = f"{acronym}_{role_abbr}_{caregiver_count}"
-            # Check for conflicts
-            if not Caregiver.objects.filter(staff_number=staff_number).exists():
-                return staff_number
-            caregiver_count += 1  # Increment the count if conflict exists
-    
-    @property
-    def full_name(self):
-        return self.last_name + ' ' + self.first_name 
-    
-    @property
-    def full_name_with_role(self):
-        """
-        Returns the caregiver's full name along with their role/qualification.
-        """
-        role_abbr = role_abbreviation.get(self.caregiver_type, "")
-        return f"{role_abbr.title()} {self.first_name} {self.last_name}"
 
     def clean(self):
         if self.date_of_birth and self.date_of_birth > date.today():
