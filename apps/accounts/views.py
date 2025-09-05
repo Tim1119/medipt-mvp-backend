@@ -1,12 +1,12 @@
 from tokenize import TokenError
 from django.db import IntegrityError
-from rest_framework.exceptions import ValidationError
-from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError,AuthenticationFailed
+from rest_framework import generics, status,permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_str
 from .tasks import send_password_reset_email
-from .serializers import OrganizationSignupSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
+from .serializers import ChangePasswordSerializer, OrganizationSignupSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
@@ -241,3 +241,28 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         user.save()
 
         return Response({"message": "Password has been reset successfully."},status=status.HTTP_200_OK)
+
+class ChangePasswordView(generics.GenericAPIView):
+    """
+    Allows a logged-in user to change their password.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        old_password = serializer.validated_data["old_password"]
+
+        if not user.check_password(old_password):
+            raise AuthenticationFailed("Old password is incorrect.") 
+
+        if serializer.validated_data["new_password"] != serializer.validated_data["confirm_password"]:
+            raise ValidationError("Passwords do not match.")
+        # Save new password
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+
+        return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)

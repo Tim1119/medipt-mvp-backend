@@ -111,3 +111,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if attrs["new_password"] != attrs["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match.")
         return attrs
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        confirm_password = attrs.get("confirm_password")
+        if new_password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match.")
+        
+        validate_password(new_password)
+        return attrs
