@@ -89,3 +89,6 @@ class LoginSerializer(serializers.Serializer):
             "refresh_token": str(refresh),
             "access_token": str(access),
         }
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()

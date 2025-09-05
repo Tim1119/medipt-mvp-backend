@@ -1,16 +1,17 @@
+from tokenize import TokenError
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer,LoginSerializer
+from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .exceptions import InvalidActivationTokenException, OrganizationSignupException, OrganizationVerificationEmailFailedException, UserDoesNotExistException
+from .exceptions import InvalidActivationTokenException, InvalidRefreshTokenException, OrganizationSignupException, OrganizationVerificationEmailFailedException, UserDoesNotExistException
 import logging
 from django.shortcuts import get_object_or_404
 from django.utils.http import urlsafe_base64_decode
@@ -19,6 +20,7 @@ from rest_framework.generics import GenericAPIView
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework_simplejwt.tokens import RefreshToken
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +134,7 @@ class LoginAccountView(generics.GenericAPIView):
 
         response.set_cookie(
             key="access_token",
-            value=data["access_token"],
+            value=access_token,
             httponly=True,
             secure=not is_localhost,
             samesite="Lax",
@@ -141,7 +143,7 @@ class LoginAccountView(generics.GenericAPIView):
         )
         response.set_cookie(
             key="refresh_token",
-            value=data["refresh_token"],
+            value=refresh_token,
             httponly=True,
             secure=not is_localhost,
             samesite="Lax",
@@ -150,3 +152,45 @@ class LoginAccountView(generics.GenericAPIView):
         )
 
         return response
+
+
+class LogoutView(generics.GenericAPIView):
+
+    """
+    Logs out a user by blacklisting their refresh token.
+    """
+    def post(self, request):
+        refresh_token = request.data.get("refresh_token")
+        if not refresh_token:
+            raise ValidationError("Refresh token is required.")
+
+        try:
+            RefreshToken(refresh_token).blacklist()
+            return Response({"message": "Successfully logged out"}, status=200)
+        
+        except TokenError:
+            raise InvalidRefreshTokenException(detail="Invalid or expired refresh token")
+        except Exception:
+            raise InvalidRefreshTokenException()
+        
+
+class LogoutView(generics.GenericAPIView):
+    """
+    Logs out a user by blacklisting their refresh token.
+    """
+    serializer_class = LogoutSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refresh_token = serializer.validated_data["refresh_token"]
+
+        try:
+            RefreshToken(refresh_token).blacklist()
+            return Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
+
+        except TokenError:
+            raise InvalidRefreshTokenException(detail="Invalid or expired refresh token")
+        except Exception:
+            raise InvalidRefreshTokenException()
