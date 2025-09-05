@@ -54,3 +54,38 @@ class OrganizationSignupSerializer(serializers.ModelSerializer):
 class ResendActivationLinkSerializer(serializers.Serializer):
     '''This serillizer is used by users to request new activation link'''
     email = serializers.EmailField()
+
+
+
+class LoginSerializer(serializers.Serializer):
+    '''This serillizer is used by users to login'''
+
+    email = serializers.EmailField(max_length=255)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    id = serializers.UUIDField(read_only=True)
+    refresh_token = serializers.CharField(max_length=255, read_only=True)
+    access_token = serializers.CharField(max_length=255, read_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email', '')
+        password = attrs.get('password', '')
+
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise AuthenticationFailed("Invalid email or password.")
+
+        if not user.is_active:
+            raise AuthenticationFailed("Your account is not yet activated. Please check your email.")
+
+        if not user.is_verified:
+            raise AuthenticationFailed("Your account is not verified. Please check your email.")
+
+        # Generate JWT tokens using SimpleJWT
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        return {
+            "user":user,
+            "refresh_token": str(refresh),
+            "access_token": str(access),
+        }

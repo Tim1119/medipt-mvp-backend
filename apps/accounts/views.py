@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer
+from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer,LoginSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
@@ -16,6 +16,9 @@ from django.shortcuts import get_object_or_404
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework.generics import GenericAPIView
+from django.conf import settings
+from django.utils import timezone
+from rest_framework.throttling import AnonRateThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -96,3 +99,54 @@ class ResendActivationLinkView(GenericAPIView):
 
         except User.DoesNotExist:
             raise UserDoesNotExistException()
+
+
+class LoginAccountView(generics.GenericAPIView):
+    throttle_classes = [AnonRateThrottle]
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = data["user"]
+        refresh_token = serializer.validated_data["refresh_token"]
+        access_token = serializer.validated_data["access_token"]
+
+        response = Response({
+            "message": "Login successful",
+            "refresh": refresh_token,
+            "access": access_token,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "full_name": user.full_name,
+            }
+        }, status=status.HTTP_200_OK)
+
+        # Cookie settings
+        domain = request.get_host().split(':')[0]
+        is_localhost = domain in ['localhost', '127.0.0.1']
+
+        response.set_cookie(
+            key="access_token",
+            value=data["access_token"],
+            httponly=True,
+            secure=not is_localhost,
+            samesite="Lax",
+            expires=timezone.now() + settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+            domain=None if is_localhost else domain,
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=data["refresh_token"],
+            httponly=True,
+            secure=not is_localhost,
+            samesite="Lax",
+            expires=timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
+            domain=None if is_localhost else domain,
+        )
+
+        return response
