@@ -1,9 +1,9 @@
 from django.db import IntegrityError
-from django.forms import ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import OrganizationSignupSerializer
+from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
@@ -12,8 +12,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from .exceptions import InvalidActivationTokenException, OrganizationSignupException, OrganizationVerificationEmailFailedException, UserDoesNotExistException
 import logging
+from django.shortcuts import get_object_or_404
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
+from rest_framework.generics import GenericAPIView
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ class OrganizationSignupView(generics.GenericAPIView):
             raise OrganizationSignupException(detail=f"Unexpected error: {str(e)}")
 
 
-class VerifyAccount(APIView):
+class VerifyAccount(GenericAPIView):
     def get(self, request, uidb64, token):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
@@ -65,4 +67,32 @@ class VerifyAccount(APIView):
         
         except User.DoesNotExist:
             raise UserDoesNotExistException()
-        
+
+
+class ResendActivationLinkView(GenericAPIView): 
+
+    """
+    Allows users to request a new activation email if they haven't activated their account yet.
+    """
+
+    serializer_class = ResendActivationLinkSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True) 
+        email = serializer.validated_data['email']
+
+        try:
+            user = User.objects.get(email=email)
+
+            if user.is_active and user.is_verified:
+                raise ValidationError("Account is already active.")
+
+            current_site_domain = get_current_site(request).domain
+
+            send_organization_activation_email.delay(current_site_domain, email)
+
+            return Response({"success": True, "message": "Activation link has been resent. Please check your email"},status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            raise UserDoesNotExistException()

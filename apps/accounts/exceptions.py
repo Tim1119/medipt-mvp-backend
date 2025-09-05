@@ -18,14 +18,6 @@ class ActivationLinkExpiredException(CustomValidationError):
     status_code = status.HTTP_401_UNAUTHORIZED  # Token expired → unauthorized
     default_detail = "Activation link has expired."
     default_code = "account_activation_link_expired"
-
-
-class AccountAlreadyActiveException(CustomValidationError):
-    status_code = status.HTTP_409_CONFLICT  # Conflict with current state
-    default_detail = "Account is already active."
-    default_code = "account_already_active"
-
-
 class InvalidActivationTokenException(CustomValidationError):
     status_code = status.HTTP_401_UNAUTHORIZED  # Invalid token → unauthorized
     default_detail = "Invalid activation token."

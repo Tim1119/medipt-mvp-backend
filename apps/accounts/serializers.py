@@ -49,3 +49,8 @@ class OrganizationSignupSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password']
         )
+
+
+class ResendActivationLinkSerializer(serializers.Serializer):
+    '''This serillizer is used by users to request new activation link'''
+    email = serializers.EmailField()
