@@ -91,4 +91,10 @@ class LoginSerializer(serializers.Serializer):
         }
 
 class LogoutSerializer(serializers.Serializer):
+    """Serializer for user to log out."""
     refresh_token = serializers.CharField()
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting a password reset link."""
+    email = serializers.EmailField()
+

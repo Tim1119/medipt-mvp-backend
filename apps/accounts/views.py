@@ -4,7 +4,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import OrganizationSignupSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
+
+from .tasks import send_password_reset_email
+from .serializers import OrganizationSignupSerializer, PasswordResetRequestSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
@@ -194,3 +196,20 @@ class LogoutView(generics.GenericAPIView):
             raise InvalidRefreshTokenException(detail="Invalid or expired refresh token")
         except Exception:
             raise InvalidRefreshTokenException()
+
+
+class PasswordResetRequestView(generics.GenericAPIView):
+    """
+    Allows a user to request a password reset link.
+    """
+    serializer_class = PasswordResetRequestSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+
+        send_password_reset_email.delay(email)
+
+        return Response({"message": "If this email exists, a password reset link has been sent."},status=status.HTTP_200_OK)

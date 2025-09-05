@@ -1,17 +1,7 @@
 from celery import shared_task
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.contrib.auth.tokens import default_token_generator
-from rest_framework_simplejwt.tokens import RefreshToken
-
 from .organization_email_service import OrganizationEmailService
-from .models import User
 from apps.organizations.models import Organization
-from django.core.mail import EmailMessage
-from django.conf import settings
-from datetime import datetime, timedelta,timezone
 from .exceptions import OrganizationNotFoundException
-import jwt
 
 
 @shared_task

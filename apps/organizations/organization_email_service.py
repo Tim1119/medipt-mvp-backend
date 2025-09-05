@@ -5,14 +5,14 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from apps.organizations.models import Organization
-
-class OrganizationEmailService:
+from shared.base_email_service import BaseEmailService
+class OrganizationEmailService(BaseEmailService):
+    """
+    Handles organization-related emails (activation, invites, etc.).
+    """
 
     @staticmethod
     def send_organization_activation_email(organization: Organization, current_site: str):
-        """
-        Generates a one-time activation token and sends an email to the organization user.
-        """
         user = organization.user
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
@@ -20,23 +20,14 @@ class OrganizationEmailService:
         activation_link = f"{settings.REACT_FRONTEND_URL}/auth/verify-email/{uid}/{token}"
 
         context = {
-            'organization_name': organization.name,
-            'activation_link': activation_link,
-            'current_site': current_site,
+            "organization_name": organization.name,
+            "activation_link": activation_link,
+            "current_site": current_site,
         }
 
-        subject = 'Activate Your Organization Account'
-        html_message = render_to_string(
-            'accounts/organizations/organization_activation_email.html',
-            context
+        OrganizationEmailService.send_email(
+            subject="Activate Your Organization Account",
+            template="accounts/organizations/organization_activation_email.html",
+            context=context,
+            recipient_list=[user.email],
         )
-
-        from_email = settings.EMAIL_HOST_USER
-        email = EmailMessage(
-            subject=subject,
-            body=html_message,
-            from_email=from_email,
-            to=[user.email],
-        )
-        email.content_subtype = "html"
-        email.send(fail_silently=False)
