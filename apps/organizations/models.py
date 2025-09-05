@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 from django.db import models
-from shared.models import TimeStampedUUID
+from shared.models import SoftDeleteModel, TimeStampedUUID
 from autoslug import AutoSlugField
 from django.utils.translation import gettext_lazy as _ 
 from shared.validators import validate_phone_number,validate_organization_acronym
@@ -11,7 +11,7 @@ from cloudinary.models import CloudinaryField
 
 
 
-class Organization(TimeStampedUUID):
+class Organization(TimeStampedUUID,SoftDeleteModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255,verbose_name=_("Organization Name"),db_index=True)
     acronym = models.CharField(max_length=15,verbose_name=_("Organization Acronym"),unique=True,validators=[validate_organization_acronym])

@@ -42,3 +42,23 @@ class MaritalStatus(models.TextChoices):
 class Gender(models.TextChoices):
     MALE = "Male",_("Male")
     FEMALE = "Female",_("Female")
+
+
+
+class BloodGroupChoices(models.TextChoices):
+    A_POSITIVE = "A+", _("A+")
+    A_NEGATIVE = "A-", _("A-")
+    B_POSITIVE = "B+", _("B+")
+    B_NEGATIVE = "B-", _("B-")
+    AB_POSITIVE = "AB+", _("AB+")
+    AB_NEGATIVE = "AB-", _("AB-")
+    O_POSITIVE = "O+", _("O+")
+    O_NEGATIVE = "O-", _("O-")
+
+
+class GenotypeChoices(models.TextChoices):
+    AA = "AA", _("AA")
+    AS = "AS", _("AS")
+    SS = "SS", _("SS")
+    AC = "AC", _("AC")
+    SC = "SC", _("SC") 
