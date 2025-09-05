@@ -4,9 +4,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.utils.encoding import force_str
 from .tasks import send_password_reset_email
-from .serializers import OrganizationSignupSerializer, PasswordResetRequestSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
+from .serializers import OrganizationSignupSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, ResendActivationLinkSerializer,LoginSerializer,LogoutSerializer
 from .models import User
 from apps.organizations.tasks import send_organization_activation_email
 from django.contrib.sites.shortcuts import get_current_site
@@ -213,3 +213,31 @@ class PasswordResetRequestView(generics.GenericAPIView):
         send_password_reset_email.delay(email)
 
         return Response({"message": "If this email exists, a password reset link has been sent."},status=status.HTTP_200_OK)
+
+class PasswordResetConfirmView(generics.GenericAPIView):
+    """
+    Handles password reset confirmation.
+    """
+    serializer_class = PasswordResetConfirmSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        uidb64 = serializer.validated_data["uidb64"]
+        token = serializer.validated_data["token"]
+        new_password = serializer.validated_data["new_password"]
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise ValidationError("Invalid reset link.")
+
+        if not default_token_generator.check_token(user, token):
+            raise ValidationError("Invalid or expired token.")
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password has been reset successfully."},status=status.HTTP_200_OK)

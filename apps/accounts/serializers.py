@@ -98,3 +98,16 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     """Serializer for requesting a password reset link."""
     email = serializers.EmailField()
 
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer to handle new password inputs.
+    """
+    uidb64 = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError("Passwords do not match.")
+        return attrs
