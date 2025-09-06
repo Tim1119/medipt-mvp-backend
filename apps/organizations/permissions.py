@@ -37,7 +37,7 @@ class IsOrganization(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and user.role == UserRoles.ORGANIZATION)
+        return bool(user and user.role == UserRoles.ORGANIZATION)
 
     def has_object_permission(self, request, view, obj):
         return request.user and request.user.role == UserRoles.ORGANIZATION

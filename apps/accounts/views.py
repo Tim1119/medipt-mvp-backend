@@ -23,6 +23,7 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from shared.utils import get_user_from_uidb64
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +56,17 @@ class OrganizationSignupView(generics.GenericAPIView):
             raise OrganizationSignupException(detail=f"Unexpected error: {str(e)}")
 
 
-class VerifyAccount(GenericAPIView):
+class VerifyAccount(APIView):
+
     def get(self, request, uidb64, token):
         try:
-            uid = urlsafe_base64_decode(uidb64).decode()
-            user = User.objects.get(pk=uid)
+            # uid = urlsafe_base64_decode(uidb64).decode()
+            user = get_user_from_uidb64(uidb64)
+            if not user:
+                raise ValidationError("Invalid activation Link")
 
             if user.is_active:
-                return Response({"success": True, "message": "Account already active."})
+                raise ValidationError("Account verification attempted for already active user")
 
             if default_token_generator.check_token(user, token):
                 user.is_active = True
@@ -154,27 +158,6 @@ class LoginAccountView(generics.GenericAPIView):
         )
 
         return response
-
-
-class LogoutView(generics.GenericAPIView):
-
-    """
-    Logs out a user by blacklisting their refresh token.
-    """
-    def post(self, request):
-        refresh_token = request.data.get("refresh_token")
-        if not refresh_token:
-            raise ValidationError("Refresh token is required.")
-
-        try:
-            RefreshToken(refresh_token).blacklist()
-            return Response({"message": "Successfully logged out"}, status=200)
-        
-        except TokenError:
-            raise InvalidRefreshTokenException(detail="Invalid or expired refresh token")
-        except Exception:
-            raise InvalidRefreshTokenException()
-        
 
 class LogoutView(generics.GenericAPIView):
     """

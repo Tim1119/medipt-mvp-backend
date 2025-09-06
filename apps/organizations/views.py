@@ -5,13 +5,20 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import UpdateAPIView,RetrieveAPIView,ListAPIView,CreateAPIView
+from apps.organizations.mixins import OrganizationContextMixin
+from apps.patients.serializers import PatientSerializer
 from .models import Organization
 from .permissions import IsOrganization, IsOrganizationWithAccount
 from apps.caregivers.models import Caregiver
 from rest_framework.exceptions import NotFound
 from rest_framework import generics
 from .serializers import OrganizationSerializer
-
+from apps.caregivers.permissions import IsCaregiver
+from shared.text_choices import UserRoles
+from shared.pagination import StandardResultsSetPagination
+from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
+from rest_framework import viewsets
 #james65@example.com
 
 class OrganizationDashboardView(APIView):
@@ -75,3 +82,35 @@ class OrganizationProfileView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "Organization profile updated successfully","data": serializer.data})
+    
+
+class LatestPatientsView(OrganizationContextMixin, ListAPIView):
+    permission_classes = [IsAuthenticated, IsOrganization | IsCaregiver]
+    serializer_class = PatientSerializer
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Patient.objects.filter(
+            organization=organization,
+            user__is_verified=True,
+            user__is_active=True,
+            user__role=UserRoles.PATIENT
+        )[:5]
+    
+class PatientViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated, IsOrganization]
+    serializer_class = PatientSerializer
+    search_fields = ['first_name', 'last_name', 'medical_id']
+    filterset_fields = ['medical_id', 'user__is_active']
+    pagination_class = StandardResultsSetPagination
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Patient.objects.filter(
+                organization=organization,
+                user__is_verified=True,
+                user__is_active=True,
+                user__role=UserRoles.PATIENT
+            )
+    
