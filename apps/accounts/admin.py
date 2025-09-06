@@ -2,12 +2,12 @@ from django.contrib import admin
 from django.utils import timezone
 from .models import User 
 from django.utils.translation import gettext_lazy as _ 
-
+from shared.admin import SoftDeleteAdmin
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(SoftDeleteAdmin):
     list_display = ('email','id', 'is_active','is_verified', 'is_deleted', 'deleted_at')
-    list_filter = ('role', 'is_active', 'is_verified', 'is_staff', 'created_at')
+    list_filter = ('is_deleted','role', 'is_active', 'is_verified', 'is_staff', 'created_at')
     ordering = ('-created_at',)
     readonly_fields = ('id','created_at', 'updated_at')
     # search_fields = ('email', 'role',)
