@@ -23,8 +23,6 @@ def validate_organization_acronym(value):
     if len(value) < 2 or len(value) > 15:
         raise ValidationError("Organization acronym must be between 2 and 15 characters.")
 
-
-
 def validate_blood_pressure(value):
     if not re.match(r'^\d{2,3}/\d{2,3}$', value):
         raise ValidationError("Enter a valid blood pressure in the format '120/80'.")

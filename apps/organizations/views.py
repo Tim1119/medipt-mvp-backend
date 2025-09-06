@@ -13,7 +13,7 @@ from .permissions import IsOrganization, IsOrganizationWithAccount
 from apps.caregivers.models import Caregiver
 from rest_framework.exceptions import NotFound
 from rest_framework import generics
-from .serializers import OrganizationSerializer
+from .serializers import OrganizationRegisterPatientSerializer, OrganizationSerializer
 from apps.caregivers.permissions import IsCaregiver
 from shared.text_choices import UserRoles
 from shared.pagination import StandardResultsSetPagination
@@ -101,7 +101,7 @@ class LatestPatientsView(OrganizationContextMixin, ListAPIView):
         )[:5]
     
 class PatientViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,viewsets.GenericViewSet):
-    permission_classes = [IsAuthenticated, IsOrganization]
+    permission_classes = [IsAuthenticated, IsOrganization | IsCaregiver]
     serializer_class = PatientSerializer
     search_fields = ['first_name', 'last_name', 'medical_id']
     filterset_fields = ['medical_id', 'user__is_active']
@@ -128,3 +128,17 @@ class PatientViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,
         patient.user.save()
         serializer = self.get_serializer(patient)
         return Response({"message": "Patient status toggled {} successfully".format("off" if patient.user.is_active else "on"), "data": serializer.data},status=status.HTTP_200_OK)
+    
+
+class RegisterPatientView(CreateAPIView):
+
+    """
+    Creates a new patient associated with the authenticated organization and send a notification
+    to the user notifying them that an account has been created for them
+    """ 
+
+    serializer_class = OrganizationRegisterPatientSerializer
+    permission_classes = [IsAuthenticated, IsOrganizationWithAccount]
+
+    def perform_create(self, serializer):
+        serializer.save()

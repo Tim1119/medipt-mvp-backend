@@ -7,9 +7,12 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+from django.core.validators import RegexValidator
+from rest_framework import serializers
+
 class ValidationMixin:
     """Common validation methods for patient-related serializers."""
-    
+
     @staticmethod
     def validate_name_field(value, field_name):
         """Validate name fields (first_name, last_name)."""
@@ -34,14 +37,19 @@ class ValidationMixin:
 
     @staticmethod
     def validate_profile_picture(value):
-        """Validate profile picture size and format."""
+        """Validate profile picture format only if possible."""
         if value:
-            if value.size > 2 * 1024 * 1024:  # 2MB limit
-                raise serializers.ValidationError("Profile picture must be under 2MB.")
-            if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-                raise serializers.ValidationError("Profile picture must be a JPG or PNG file.")
+            # For CloudinaryResource, skip name/size check
+            try:
+                filename = value.name
+                if not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    raise serializers.ValidationError(
+                        "Profile picture must be a JPG or PNG file."
+                    )
+            except AttributeError:
+                # CloudinaryResource has no .name, so skip this check
+                pass
         return value
-
 
 from rest_framework import serializers
 from .models import PatientMedicalRecord 

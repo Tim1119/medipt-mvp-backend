@@ -6,7 +6,6 @@ from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .mixins import ValidationMixin
-
 # from apps.accounts.user_roles import UserRoles
 # from .exceptions import PatientNotificationFailedException
 from .mixins import PatientRepresentationMixin
@@ -59,64 +58,6 @@ class PatientSerializer(PatientRepresentationMixin, serializers.ModelSerializer)
         representation = super().to_representation(instance)
         return self.add_user_fields_to_representation(instance, representation)
 
-
-# class OrganizationRegisterPatientSerializer(PatientRepresentationMixin, BasePatientSerializer):
-#     """Serializer for organization staff to register new patients."""
-    
-#     email = serializers.EmailField(write_only=True)
-#     password = serializers.CharField(
-#         write_only=True, 
-#         style={'input_type': 'password'}, 
-#         validators=[validate_password]
-#     )
-
-#     class Meta(BasePatientSerializer.Meta):
-#         fields = BasePatientSerializer.Meta.fields + ['email', 'password']
-
-#     def validate_email(self, value):
-#         django_validate_email(value)
-#         if User.objects.filter(email__iexact=value).exists():
-#             raise serializers.ValidationError("An account with this email already exists.")
-#         return value.lower()
-
-#     def create(self, validated_data):
-#         medical_record_data = validated_data.pop('medical_record', {})
-#         user_data = {
-#             'email': validated_data.pop('email'),
-#             'password': validated_data.pop('password'),
-#             'role': UserRoles.PATIENT,
-#             'is_active': True,
-#             'is_verified': True,
-#         }
-
-#         with transaction.atomic():
-#             user = User.objects.create_user(**user_data)
-#             patient = Patient.objects.create(
-#                 user=user,
-#                 organization=self.context['request'].user.organization,
-#                 **validated_data
-#             )
-#             PatientMedicalRecord.objects.create(patient=patient, **medical_record_data)
-
-#             try:
-#                 send_patient_account_creation_notification_email.delay(
-#                     patient_email=user.email,
-#                     patient_full_name=f"{patient.first_name} {patient.last_name}",
-#                     organization_name=self.context['request'].user.organization.name,
-#                     patient_id=str(patient.id)
-#                 )
-#             except Exception as e:
-#                 raise PatientNotificationFailedException(
-#                     f"Patient created but failed to send notification: {str(e)}"
-#                 )
-
-#         return patient
-
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         representation = self.add_user_fields_to_representation(instance, representation)
-#         representation = self.add_medical_record_to_representation(instance, representation)
-#         return representation
 
 
 # class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer):
