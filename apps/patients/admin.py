@@ -3,7 +3,7 @@ from .models import Patient,PatientMedicalRecord,PatientDiagnosisDetails,VitalSi
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'medical_id', 'date_of_birth', 'organization','id')
+    list_display = ('first_name', 'last_name', 'medical_id', 'date_of_birth', 'organization','id','slug')
     search_fields = ('first_name', 'last_name', 'medical_id')
     list_filter = ('organization', 'gender', 'marital_status')
 

@@ -19,6 +19,9 @@ from shared.text_choices import UserRoles
 from shared.pagination import StandardResultsSetPagination
 from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
 from rest_framework import viewsets
+from rest_framework.decorators import action
+
+
 #james65@example.com
 
 class OrganizationDashboardView(APIView):
@@ -114,3 +117,14 @@ class PatientViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,
                 user__role=UserRoles.PATIENT
             )
     
+    @action(detail=True, methods=['patch'], url_path='toggle-status')
+    def toggle_status(self, request, slug=None):
+        """
+        Toggle the patient's active status
+        """
+        patient = Patient.objects.filter(slug=slug,organization=self.get_organization()).first()
+        patient.user.is_active = not patient.user.is_active
+        patient.user.is_verified = not patient.user.is_verified
+        patient.user.save()
+        serializer = self.get_serializer(patient)
+        return Response({"message": "Patient status toggled {} successfully".format("off" if patient.user.is_active else "on"), "data": serializer.data},status=status.HTTP_200_OK)
