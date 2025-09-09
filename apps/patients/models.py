@@ -85,7 +85,7 @@ class PatientMedicalRecord(TimeStampedUUID,SoftDeleteModel):
     blood_group = models.CharField(max_length=3, choices=BloodGroupChoices, help_text="Blood group of the patient",db_index=True)
     genotype = models.CharField(max_length=2, choices=GenotypeChoices, help_text="Genotype of the patient",db_index=True)
     weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight of the patient in kilograms (kg)",blank=True, null=True)
-    height = models.DecimalField(max_digits=4, decimal_places=1, help_text="Height of the patient in centimeters (cm)",blank=True, null=True)
+    height = models.DecimalField(max_digits=5, decimal_places=2, help_text="Height of the patient in centimeters (cm)",blank=True, null=True)
     allergies = models.TextField(blank=True, null=True, help_text="Allergies (if any)")
     slug = AutoSlugField(populate_from='patient', unique=True)
     

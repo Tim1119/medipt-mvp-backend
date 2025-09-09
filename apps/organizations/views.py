@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import UpdateAPIView,RetrieveAPIView,ListAPIView,CreateAPIView
-from apps.organizations.mixins import OrganizationContextMixin
+from shared.mixins import OrganizationContextMixin
 from apps.patients.serializers import PatientSerializer
 from .models import Organization
 from .permissions import IsOrganization, IsOrganizationWithAccount

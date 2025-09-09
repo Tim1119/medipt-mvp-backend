@@ -10,7 +10,8 @@ from .mixins import ValidationMixin
 # from .exceptions import PatientNotificationFailedException
 from .mixins import PatientRepresentationMixin
 from .models import Patient, PatientMedicalRecord, PatientDiagnosisDetails, VitalSign
-# from .tasks import send_patient_account_creation_notification_email
+from .patient_service import PatientService
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -57,6 +58,28 @@ class PatientSerializer(PatientRepresentationMixin, serializers.ModelSerializer)
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         return self.add_user_fields_to_representation(instance, representation)
+
+
+
+class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer):
+    medical_record = PatientMedicalRecordSerializer(required=False, partial=True)
+    class Meta(BasePatientSerializer.Meta):
+        fields = BasePatientSerializer.Meta.fields + ['medical_record']
+        read_only_fields = ['id', 'medical_id']
+
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation = self.add_user_fields_to_representation(instance, representation)
+        representation = self.add_medical_record_to_representation(instance, representation)
+        return representation
+    
+    def update(self, instance, validated_data):
+        """
+        Update patient instance and related medical record.
+        """
+        return PatientService.update_patient_details_and_medical_record(instance, validated_data)
+
 
 
 
