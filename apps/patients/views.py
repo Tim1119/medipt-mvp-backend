@@ -8,6 +8,7 @@ from .models import Patient,PatientDiagnosisDetails
 from .serializers import PatientDetailSerializer,PatientDiagnosisSerializer
 from rest_framework.response import Response
 from django.db.models import Prefetch   
+from django.db.models import Q
 # Create your views here.
 
 
@@ -71,3 +72,55 @@ class PatientDiagnosisListView(OrganizationContextMixin,generics.ListAPIView):
             "message": "Patients with latest diagnoses retrieved successfully",
             "data": serializer.data
         })
+
+
+class PatientDiagnosisHistoryView(OrganizationContextMixin, generics.RetrieveAPIView):
+    """
+    Get  a patient details with all their diagnoses history
+    """
+
+    serializer_class = PatientDiagnosisSerializer
+    permission_classes = [IsAuthenticated & (IsOrganization | IsCaregiver)]
+    lookup_field = "id"
+    lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Patient.objects.filter(organization=organization)
+
+    def get_diagnoses_queryset(self, patient):
+        qs = (
+            PatientDiagnosisDetails.objects.filter(patient=patient)
+            .select_related("caregiver", "patient", "organization")
+            .prefetch_related("vitalsign")
+        )
+
+        # Apply search
+        search_query = self.request.GET.get("search")
+        if search_query:
+            qs = qs.filter(
+                Q(assessment__icontains=search_query)
+                | Q(diagnoses__icontains=search_query)
+                | Q(medication__icontains=search_query)
+            )
+
+        # Apply ordering (defaults to -created_at)
+        ordering = self.request.GET.get("ordering", "-created_at")
+        return qs.order_by(ordering)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        patient = self.get_object()  # DRF handles lookup by medical_id here
+        context["diagnoses_queryset"] = self.get_diagnoses_queryset(patient)
+        return context
+
+    def retrieve(self, request, *args, **kwargs):
+        patient = self.get_object()  # DRF resolves this
+        serializer = self.get_serializer(patient)
+        return Response(
+            {
+                "success": True,
+                "message": "Patient diagnosis history retrieved successfully",
+                "data": serializer.data,
+            }
+        )
