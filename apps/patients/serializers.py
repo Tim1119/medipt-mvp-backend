@@ -81,6 +81,61 @@ class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer)
         return PatientService.update_patient_details_and_medical_record(instance, validated_data)
 
 
+class DiagnosisSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Patient Diagnoses only. It is used in GroupedDiagnosisDetailsForPatientSerializer for grouping.
+    It is not used in isolation  and does not contain detils, like caregiver, patient and organization unlike PatientDiagnosisDetailsSerializer
+    """
+    class Meta:
+        model = PatientDiagnosisDetails
+        fields = ['id', 'assessment', 'diagnoses', 'medication', 'health_allergies', 'health_care_center', 'notes', 'created_at']
+
+class PatientDiagnosisSerializer(serializers.ModelSerializer):
+    """
+    Combines patient info with diagnoses.
+    Handles three views via `view_type` context:
+    - 'latest': Show only the latest diagnosis
+    - 'all': Show all diagnoses
+    """
+    diagnoses = serializers.SerializerMethodField()
+    patient_name = serializers.CharField(source="full_name", read_only=True)
+    diagnosis_count = serializers.IntegerField(source="diagnoses.count", read_only=True)
+
+    class Meta:
+        model = Patient
+        fields = [
+            'id',
+            'patient_name',
+            'medical_id',
+            'diagnoses',
+            'profile_picture',
+            'address',
+            'diagnosis_count',
+        ]
+
+    def get_diagnoses(self, obj):
+        """
+        Get diagnoses based on view type ('latest' or 'all').
+        """
+        view_type = self.context.get('view_type', 'all')
+        diagnoses = obj.diagnoses.all() 
+
+        if view_type == 'latest':
+            latest_diagnosis = diagnoses.first()
+            return (
+                DiagnosisSerializer(latest_diagnosis, context=self.context).data
+                if latest_diagnosis else None
+            )
+        return DiagnosisSerializer(diagnoses, many=True, context=self.context).data
+
+
+
+
+
+
+
+
+
 
 
 # class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer):
