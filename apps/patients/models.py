@@ -108,7 +108,7 @@ class PatientDiagnosisDetails(TimeStampedUUID,SoftDeleteModel):
     notes=models.TextField()
 
     def __str__(self):
-        return f"Patient Diagnosis Details {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"Patient Diagnosis Details for {self.patient.full_name} at {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
 
     class Meta:
         ordering = ['-created_at']

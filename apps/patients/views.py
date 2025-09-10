@@ -1,14 +1,21 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from apps.organizations.permissions import IsOrganization
 from apps.caregivers.permissions import IsCaregiver
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
+from apps.caregivers.models import Caregiver
 from shared.mixins import OrganizationContextMixin
 from .models import Patient,PatientDiagnosisDetails
-from .serializers import PatientDetailSerializer,PatientDiagnosisSerializer
+from .serializers import PatientDetailSerializer,PatientDiagnosisSerializer,PatientDiagnosisWithVitalSignSerializer
 from rest_framework.response import Response
 from django.db.models import Prefetch   
 from django.db.models import Q
+from rest_framework import status
+from rest_framework.validators import ValidationError
+from rest_framework import viewsets
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 # Create your views here.
 
 
@@ -24,7 +31,7 @@ class PatientRegistrationDetailsView(OrganizationContextMixin,generics.RetrieveU
 
     def get_queryset(self):
         organization = self.get_organization()
-        return Patient.objects.filter(organization=organization).select_related('user').prefetch_related('patientmedicalrecord')
+        return Patient.objects.filter(organization=organization,deleted_at__isnull=True).select_related('user').prefetch_related('patientmedicalrecord')
 
 
 class PatientDiagnosisListView(OrganizationContextMixin,generics.ListAPIView):
@@ -46,7 +53,7 @@ class PatientDiagnosisListView(OrganizationContextMixin,generics.ListAPIView):
                     .order_by('-created_at')
                 )
             )
-            .filter(diagnoses__isnull=False,organization=organization)
+            .filter(diagnoses__isnull=False,organization=organization,deleted_at__isnull=True)
             .distinct()
         )
 
@@ -90,7 +97,7 @@ class PatientDiagnosisHistoryView(OrganizationContextMixin, generics.RetrieveAPI
 
     def get_diagnoses_queryset(self, patient):
         qs = (
-            PatientDiagnosisDetails.objects.filter(patient=patient)
+            PatientDiagnosisDetails.objects.filter(patient=patient,deleted_at__isnull=True)
             .select_related("caregiver", "patient", "organization")
             .prefetch_related("vitalsign")
         )
@@ -124,3 +131,101 @@ class PatientDiagnosisHistoryView(OrganizationContextMixin, generics.RetrieveAPI
                 "data": serializer.data,
             }
         )
+
+# ViewSet
+class PatientDiagnosisViewSet(OrganizationContextMixin, viewsets.ModelViewSet):
+    """
+    Handles creation, update, retrieval of patient diagnoses with vital signs.
+    
+    - Caregivers: create/update for their own patients; caregiver is auto-assigned.
+    - Organization users: can select caregiver from organization.
+    """
+
+    serializer_class = PatientDiagnosisWithVitalSignSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return PatientDiagnosisDetails.objects.filter(
+            organization=organization, 
+            deleted_at__isnull=True
+        ).select_related(
+            'patient', 'caregiver', 'organization'
+        ).prefetch_related('vitalsign')
+
+    def perform_create(self, serializer):
+        organization = self.get_organization()
+
+        # Get patient from validated data (note: source='patient' means the key is 'patient')
+        patient_id = serializer.validated_data.get('patient')
+        if not patient_id:
+            raise ValidationError("Patient ID is required")
+        
+        patient = get_object_or_404(Patient, id=patient_id, organization=organization)
+
+        # Determine caregiver
+        if hasattr(self.request.user, 'caregiver'):
+            caregiver = self.request.user.caregiver
+        else:
+            caregiver_id = serializer.validated_data.get('caregiver') or self.request.data.get('caregiver')
+            if not caregiver_id:
+                raise ValidationError("Caregiver is required for organization users")
+            caregiver = get_object_or_404(Caregiver, id=caregiver_id, organization=organization)
+
+        # Save with context - let serializer and service handle the rest
+        serializer.save(
+            organization=organization,
+            patient=patient,
+            caregiver=caregiver
+        )
+
+    def create(self, request, *args, **kwargs):
+        organization = self.get_organization()
+        serializer = self.get_serializer(
+            data=request.data, 
+            context={'request': request, 'organization': organization}
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            "success": True,
+            "message": "Patient diagnosis and vital signs created successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        organization = self.get_organization()
+        
+        serializer = self.get_serializer(
+            instance, 
+            data=request.data, 
+            partial=True, 
+            context={'request': request, 'organization': organization}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        # Determine caregiver for update
+        if hasattr(self.request.user, 'caregiver'):
+            caregiver = self.request.user.caregiver
+        else:
+            caregiver_id = request.data.get('caregiver')
+            caregiver = instance.caregiver  # fallback to existing
+            if caregiver_id:
+                caregiver = get_object_or_404(Caregiver, id=caregiver_id, organization=organization)
+
+        # Patient cannot change in update
+        patient = instance.patient
+
+        serializer.save(
+            organization=organization,
+            patient=patient,
+            caregiver=caregiver
+        )
+        
+        return Response({
+            "success": True,
+            "message": "Patient diagnosis and vital signs updated successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
