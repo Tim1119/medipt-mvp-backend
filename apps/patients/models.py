@@ -109,6 +109,30 @@ class PatientDiagnosisDetails(TimeStampedUUID,SoftDeleteModel):
 
     def __str__(self):
         return f"Patient Diagnosis Details for {self.patient.full_name} at {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+    def delete(self, using=None, keep_parents=False):
+        """Override to cascade soft delete to related VitalSign"""
+        # First soft delete the related VitalSign if it exists
+        try:
+            if hasattr(self, 'vitalsign') and self.vitalsign:
+                self.vitalsign.delete()
+        except VitalSign.DoesNotExist:
+            pass
+        
+        # Then soft delete this instance
+        super().delete(using=using, keep_parents=keep_parents)
+
+    def restore(self, using=None, keep_parents=False):
+        """Override to cascade restore to related VitalSign"""
+        # First restore this instance
+        super().restore(using=using, keep_parents=keep_parents)
+        
+        # Then restore the related VitalSign if it exists
+        try:
+            if hasattr(self, 'vitalsign') and self.vitalsign:
+                self.vitalsign.restore()
+        except VitalSign.DoesNotExist:
+            pass
 
     class Meta:
         ordering = ['-created_at']

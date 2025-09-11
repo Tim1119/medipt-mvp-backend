@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from shared.text_choices import UserRoles
 from rest_framework.exceptions import NotFound
-from rest_framework.permissions import BasePermission
+
 
 
 

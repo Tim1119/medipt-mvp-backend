@@ -210,3 +210,22 @@ class PatientDiagnosisWithVitalSignSerializer(serializers.ModelSerializer):
         
         # Use service to update diagnosis
         return PatientDiagnosisVitalSignService.update_diagnosis(instance, validated_data)
+
+
+class PatientProfileSerializer(ValidationMixin, serializers.ModelSerializer):
+    """Serializer for patient profile"""
+    
+    class Meta:
+        model = Patient
+        fields = [
+            'id', 'first_name', 'last_name', 'medical_id', 'date_of_birth', 
+            'marital_status', 'profile_picture', 'gender', 'phone_number', 
+            'emergency_phone_number', 'address', 
+        ]
+        read_only_fields = ['id', 'medical_id']
+
+    def validate_first_name(self, value):
+        return self.validate_name_field(value, "First name")
+
+    def validate_last_name(self, value):
+        return self.validate_name_field(value, "Last name")

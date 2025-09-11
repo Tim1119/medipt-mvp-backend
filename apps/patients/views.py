@@ -1,12 +1,15 @@
+from amqp import NotFound
 from django.shortcuts import get_object_or_404, render
 from apps.organizations.permissions import IsOrganization
 from apps.caregivers.permissions import IsCaregiver
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 from apps.caregivers.models import Caregiver
+from apps.patients.exceptions import PatientNotFoundException
+from apps.patients.permission import IsPatient,IsPatientSelf
 from shared.mixins import OrganizationContextMixin
 from .models import Patient,PatientDiagnosisDetails
-from .serializers import PatientDetailSerializer,PatientDiagnosisSerializer,PatientDiagnosisWithVitalSignSerializer
+from .serializers import PatientDetailSerializer,PatientDiagnosisSerializer,PatientDiagnosisWithVitalSignSerializer, PatientProfileSerializer
 from rest_framework.response import Response
 from django.db.models import Prefetch   
 from django.db.models import Q
@@ -132,8 +135,9 @@ class PatientDiagnosisHistoryView(OrganizationContextMixin, generics.RetrieveAPI
             }
         )
 
-# ViewSet
-class PatientDiagnosisViewSet(OrganizationContextMixin, viewsets.ModelViewSet):
+
+
+class PatientDiagnosisVitalSignViewSet(OrganizationContextMixin, viewsets.ModelViewSet):
     """
     Handles creation, update, retrieval of patient diagnoses with vital signs.
     
@@ -229,3 +233,27 @@ class PatientDiagnosisViewSet(OrganizationContextMixin, viewsets.ModelViewSet):
             "message": "Patient diagnosis and vital signs updated successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+    
+
+class PatienProfileView(OrganizationContextMixin, generics.RetrieveUpdateAPIView):
+    """
+    Retrieve or update patient info.
+    - Org and Caregivers can view patients in their organization
+    - Patients can view themselves
+    - Only the patient can update their own record
+    """
+    serializer_class = PatientProfileSerializer
+    permission_classes = [IsAuthenticated, (IsOrganization | IsCaregiver | IsPatient), IsPatientSelf]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Patient.objects.filter(organization=organization)
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except NotFound:
+            raise PatientNotFoundException()
+
+
