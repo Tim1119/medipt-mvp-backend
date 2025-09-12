@@ -14,3 +14,15 @@ class IsCaregiver(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return request.user and request.user.role == UserRoles.PATIENT
+    
+
+class IsCaregiverSelf(BasePermission):
+    """
+    Only allow a patient to update their own record.
+    """
+    def has_object_permission(self, request, view, obj):
+        # Only patients can update their own info
+        if request.method in ("PUT", "PATCH"):
+            return obj.user == request.user
+        return True
+    

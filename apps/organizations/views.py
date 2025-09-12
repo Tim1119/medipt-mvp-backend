@@ -14,6 +14,7 @@ from apps.caregivers.models import Caregiver
 from rest_framework.exceptions import NotFound
 from rest_framework import generics
 from .serializers import OrganizationRegisterPatientSerializer, OrganizationSerializer
+from apps.caregivers.serializers import CaregiverSerializer
 from apps.caregivers.permissions import IsCaregiver
 from shared.text_choices import UserRoles
 from shared.pagination import StandardResultsSetPagination
@@ -142,3 +143,47 @@ class RegisterPatientView(CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+
+
+class LatestCaregiverView(OrganizationContextMixin, ListAPIView):
+    permission_classes = [IsAuthenticated, IsOrganization | IsCaregiver]
+    serializer_class = CaregiverSerializer
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Caregiver.objects.filter(
+            organization=organization,
+            user__is_verified=True,
+            user__is_active=True,
+            user__role=UserRoles.CAREGIVER
+        )[:5]
+    
+class CaregiverViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated, IsOrganization]
+    serializer_class = CaregiverSerializer
+    search_fields = ['first_name', 'last_name', 'staff_number']
+    filterset_fields = ['caregiver_type', 'user__is_active']
+    pagination_class = StandardResultsSetPagination
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        organization = self.get_organization()
+        return Caregiver.objects.filter(
+                organization=organization,
+                user__is_verified=True,
+                user__is_active=True,
+                user__role=UserRoles.CAREGIVER
+            )
+    
+    @action(detail=True, methods=['patch'], url_path='toggle-status')
+    def toggle_status(self, request, slug=None):
+        """
+        Toggle the caregiver's active status
+        """
+        caregiver = Caregiver.objects.filter(slug=slug,organization=self.get_organization()).first()
+        caregiver.user.is_active = not caregiver.user.is_active
+        caregiver.user.is_verified = not caregiver.user.is_verified
+        caregiver.user.save()
+        serializer = self.get_serializer(caregiver)
+        return Response({"message": "Caregiver status toggled {} successfully".format("off" if caregiver.user.is_active else "on"), "data": serializer.data},status=status.HTTP_200_OK)
+    

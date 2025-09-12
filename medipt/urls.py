@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/v1/auth/accounts/',include('apps.accounts.urls')),
     path('api/v1/organizations/',include('apps.organizations.urls')),
     path('api/v1/patients/',include('apps.patients.urls')),
+    path('api/v1/caregiver/',include('apps.caregivers.urls')),
     path("__reload__/", include("django_browser_reload.urls")),
 ] + debug_toolbar_urls()
 
