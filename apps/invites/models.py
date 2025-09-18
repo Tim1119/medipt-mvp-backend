@@ -31,6 +31,7 @@ class CaregiverInvite(TimeStampedUUID):
     invited_by = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name="sent_caregiver_invites",help_text=_("The user who sent this invitation."))
     resend_count = models.PositiveIntegerField(default=0,help_text=_("Number of times the invitation was resent."))
 
+
     class Meta:
         verbose_name = _("Caregiver Invitation")
         verbose_name_plural = _("Caregiver Invitations")
