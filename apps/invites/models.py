@@ -16,6 +16,7 @@ def default_expires_at():
     """Set default expiry based on settings or 7 days."""
     return timezone.now() + timezone.timedelta(days=getattr(settings, "INVITATION_EXPIRY_DAYS", 7))
 
+
 class InvitationStatus(models.TextChoices):
     PENDING = "PENDING", _("Pending")
     ACCEPTED = "ACCEPTED", _("Accepted")
