@@ -21,6 +21,7 @@ from shared.pagination import StandardResultsSetPagination
 from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 #james65@example.com
@@ -67,6 +68,7 @@ class OrganizationProfileView(generics.RetrieveUpdateAPIView):
     """
     serializer_class = OrganizationSerializer
     permission_classes = [IsAuthenticated, IsOrganization]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_object(self):
         try:
@@ -130,7 +132,8 @@ class PatientViewSet(OrganizationContextMixin,ListModelMixin,RetrieveModelMixin,
         serializer = self.get_serializer(patient)
         return Response({"message": "Patient status toggled {} successfully".format("off" if patient.user.is_active else "on"), "data": serializer.data},status=status.HTTP_200_OK)
     
-
+from drf_yasg.utils import swagger_auto_schema
+@swagger_auto_schema(parser_classes=[MultiPartParser, FormParser])
 class RegisterPatientView(CreateAPIView):
 
     """
@@ -140,6 +143,7 @@ class RegisterPatientView(CreateAPIView):
 
     serializer_class = OrganizationRegisterPatientSerializer
     permission_classes = [IsAuthenticated, IsOrganizationWithAccount]
+    
 
     def perform_create(self, serializer):
         serializer.save()

@@ -18,6 +18,7 @@ from rest_framework.validators import ValidationError
 from rest_framework import viewsets
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Create your views here.
 
@@ -31,6 +32,7 @@ class PatientRegistrationDetailsView(OrganizationContextMixin,generics.RetrieveU
     serializer_class = PatientDetailSerializer
     permission_classes = [ IsAuthenticated & (IsOrganization | IsCaregiver)]
     lookup_field = 'id'
+    # parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         organization = self.get_organization()
@@ -245,6 +247,7 @@ class PatienProfileView(OrganizationContextMixin, generics.RetrieveUpdateAPIView
     serializer_class = PatientProfileSerializer
     permission_classes = [IsAuthenticated, (IsOrganization | IsCaregiver | IsPatient), IsPatientSelf]
     lookup_field = 'id'
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         organization = self.get_organization()

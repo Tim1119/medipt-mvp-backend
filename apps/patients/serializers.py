@@ -34,6 +34,7 @@ class BasePatientSerializer(ValidationMixin, serializers.ModelSerializer):
     """Base serializer for patient with common fields and validations."""
     
     medical_record = PatientMedicalRecordSerializer(required=False)
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Patient
@@ -214,6 +215,7 @@ class PatientDiagnosisWithVitalSignSerializer(serializers.ModelSerializer):
 
 class PatientProfileSerializer(ValidationMixin, serializers.ModelSerializer):
     """Serializer for patient profile"""
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
     
     class Meta:
         model = Patient

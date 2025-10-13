@@ -14,6 +14,7 @@ from apps.patients.mixins import PatientRepresentationMixin
 class OrganizationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', required=True)
     organization_logo_url = serializers.SerializerMethodField()
+    logo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Organization
@@ -22,13 +23,22 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        email = validated_data.pop('email', None)
+        # email = validated_data.pop('email', None)
 
-        if email and email != instance.user.email:
-            if User.objects.filter(email=email).exists():
-                raise serializers.ValidationError({"email": "This email is already in use."})
-            instance.user.email = email
-            instance.user.save()
+        # if email and email != instance.user.email:
+        #     if User.objects.filter(email=email).exists():
+        #         raise serializers.ValidationError({"email": "This email is already in use."})
+        #     instance.user.email = email
+        #     instance.user.save()
+
+        user_data = validated_data.pop('user', None)
+        if user_data:
+            new_email = user_data.get('email')
+            if new_email and new_email != instance.user.email:
+                if User.objects.filter(email=new_email).exists():
+                    raise serializers.ValidationError({"email": "This email is already in use."})
+                instance.user.email = new_email
+                instance.user.save()
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
