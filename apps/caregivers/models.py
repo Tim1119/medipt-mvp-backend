@@ -1,6 +1,6 @@
 from django.db import models
 from django.forms import ValidationError
-from shared.models import TimeStampedUUID
+from shared.models import TimeStampedUUID,SoftDeleteModel
 from autoslug import AutoSlugField
 from django.utils.translation import gettext_lazy as _ 
 from shared.validators import validate_phone_number
@@ -12,7 +12,7 @@ from datetime import date
 from cloudinary.models import CloudinaryField
 
 
-class Caregiver(TimeStampedUUID):
+class Caregiver(TimeStampedUUID,SoftDeleteModel):
 
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization,on_delete=models.PROTECT,verbose_name=_("Organization"))

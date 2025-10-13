@@ -33,6 +33,7 @@ LOCAL_APPS = [
     'apps.organizations',
     'apps.patients',
     'apps.caregivers',
+    'apps.invites'
 
 ]
 
