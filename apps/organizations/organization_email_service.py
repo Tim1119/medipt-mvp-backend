@@ -21,7 +21,7 @@ class OrganizationEmailService(BaseEmailService):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        activation_link = f"{settings.REACT_FRONTEND_URL}/auth/verify-email/{uid}/{token}"
+        activation_link = f"{settings.REACT_FRONTEND_URL}/auth/verify-account/{uid}/{token}"
 
         context = {
             "organization_name": organization.name,
